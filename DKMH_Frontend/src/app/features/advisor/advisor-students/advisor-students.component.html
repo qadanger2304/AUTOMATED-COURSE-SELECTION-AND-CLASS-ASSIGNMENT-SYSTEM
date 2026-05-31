@@ -1,0 +1,135 @@
+<div class="content">
+    <div class="welcome-card">
+        <h2>🎓 Danh sách sinh viên phụ trách</h2>
+        <p>Hiển thị danh sách sinh viên thuộc lớp cố vấn học tập / lớp học phần bạn đang quản lý.</p>
+    </div>
+
+    <div class="info-card filter-card">
+        <h3>Tìm kiếm & Lọc</h3>
+        <div class="filter-controls">
+            <input 
+                type="text" 
+                placeholder="🔍 Tìm theo tên hoặc MSSV..." 
+                [(ngModel)]="searchQuery"
+                (keyup.enter)="onSearchClick()"
+                (change)="onSearchChange()"
+            />
+            <select 
+                [ngModel]="selectedClass" 
+                (ngModelChange)="onClassChange($event)"
+            >
+                <option *ngFor="let lop of classOptions" [value]="lop">{{ lop }}</option>
+            </select>
+            <button class="btn search-btn" (click)="onSearchClick()">Tìm kiếm</button>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>
+            Danh sách sinh viên 
+            <span *ngIf="!isLoading">({{ filteredStudents.length }} / {{ allStudents.length }} SV)</span>
+        </h3>
+
+        <div *ngIf="isLoading" class="loading-message">
+            <div class="spinner"></div> Đang tải danh sách sinh viên...
+        </div>
+        
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+        
+        <div *ngIf="!isLoading && !errorMessage && filteredStudents.length === 0" class="alert-warning">
+            Không tìm thấy sinh viên nào theo điều kiện lọc.
+        </div>
+
+        <div class="table-scroll" *ngIf="!isLoading && filteredStudents.length > 0">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 15%;">MSSV</th>
+                        <th style="width: 25%;">Họ tên</th>
+                        <th style="width: 15%;">Lớp</th>
+                        <th style="width: 20%;">Ngành</th>
+                        <th style="width: 10%;">Trạng thái</th>
+                        <th style="width: 10%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let student of filteredStudents; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ student.ma_sv }}</td>
+                        <td>{{ student.ho_ten }}</td>
+                        <td>{{ student.lop }}</td>
+                        <td>{{ student.nganh }}</td>
+                        <td>
+                            <span 
+                                class="status"
+                                [ngClass]="{
+                                    'success': student.trang_thai_hoc_tap === 'Đang học',
+                                    'warning': student.trang_thai_hoc_tap === 'Bảo lưu',
+                                    'danger': student.trang_thai_hoc_tap === 'Cảnh cáo học vụ'
+                                }"
+                            >
+                                {{ student.trang_thai_hoc_tap }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-view" (click)="viewStudentDetail(student)">Xem</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="showStudentModal" (click)="closeModal()"></div>
+    
+    <div class="modal" [class.open]="showStudentModal">
+        <div class="modal-content">
+            <h3>Thông tin chi tiết sinh viên</h3>
+            
+            <div *ngIf="selectedStudent">
+                <div class="detail-row">
+                    <label>Mã số sinh viên:</label>
+                    <span>{{ selectedStudent.ma_sv }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Họ và Tên:</label>
+                    <span style="font-weight: 700; color: #1565c0;">{{ selectedStudent.ho_ten }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Lớp hành chính:</label>
+                    <span>{{ selectedStudent.lop }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Chuyên ngành:</label>
+                    <span>{{ selectedStudent.nganh }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Ngày sinh:</label>
+                    <span>{{ selectedStudent.ngay_sinh | date: 'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Email:</label>
+                    <span>{{ selectedStudent.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <label>Trạng thái học tập:</label>
+                    <span class="status"
+                        [ngClass]="{
+                            'success': selectedStudent.trang_thai_hoc_tap === 'Đang học',
+                            'warning': selectedStudent.trang_thai_hoc_tap === 'Bảo lưu',
+                            'danger': selectedStudent.trang_thai_hoc_tap === 'Cảnh cáo học vụ'
+                        }">
+                        {{ selectedStudent.trang_thai_hoc_tap }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="cancel-btn" (click)="closeModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

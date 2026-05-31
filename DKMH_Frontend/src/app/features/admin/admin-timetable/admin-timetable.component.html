@@ -1,0 +1,124 @@
+<div class="content">
+  <div class="info-card toolbar">
+    <h3>Quản lý Thời khóa biểu</h3>
+    <div class="toolbar-actions">
+      <select class="filter-select" [(ngModel)]="selectedHocKy" (ngModelChange)="onHocKyChange()">
+        <option [value]="1">Học kỳ 1</option>
+        <option [value]="2">Học kỳ 2</option>
+        <option [value]="3">Học kỳ 3</option>
+        <option [value]="4">Học kỳ 4</option>
+        <option [value]="5">Học kỳ 5</option>
+        <option [value]="6">Học kỳ 6</option>
+        <option [value]="7">Học kỳ 7</option>
+        <option [value]="8">Học kỳ 8</option>
+      </select>
+      <button class="btn add-btn" (click)="generate()" [disabled]="isLoading">
+        <span *ngIf="isLoading">Đang xử lý...</span>
+        <span *ngIf="!isLoading">🔄 Tạo Lịch từ LHP</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bảng chính hiển thị danh sách Lịch học phần -->
+  <div class="info-card">
+    <h3>Danh sách Lịch học ({{ schedules.length }} lớp)</h3>
+
+    <div *ngIf="isLoading && schedules.length === 0" class="alert alert-info">Đang tải danh sách lịch học...</div>
+    <div *ngIf="!isLoading && schedules.length === 0" class="alert alert-warning">
+      Không tìm thấy lịch học cho Học kỳ {{ selectedHocKy }}.
+      <p>Hãy bấm nút "Tạo Lịch từ LHP" để sinh dữ liệu.</p>
+    </div>
+
+    <table class="subject-table" *ngIf="!isLoading && schedules.length > 0">
+      <thead>
+        <tr>
+          <th style="width: 100px;">Mã LHP</th>
+          <th>Tên học phần</th>
+          <th style="width: 100px;">Sĩ số</th>
+          <th style="width: 150px;">Chi tiết</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <ng-container *ngFor="let lop of schedules">
+          <tr class="main-row" (click)="toggleExpand(lop)">
+            <td>{{ lop.ma_lop_hp }}</td>
+            <td>{{ lop.ten_hoc_phan }}</td>
+            <td>{{ lop.danh_sach_sv?.length || 0 }}</td>
+            <td>
+              <button class="btn edit">
+                {{ lop.expanded ? 'Thu gọn ▲' : 'Xem chi tiết ▼' }}
+              </button>
+            </td>
+          </tr>
+          
+          <!-- HÀNG CHI TIẾT CỦA BUỔI HỌC -->
+          <tr *ngIf="lop.expanded">
+            <td colspan="4" class="details-cell">
+              <div class="details-content">
+                <h4>Chi tiết Buổi học ({{ lop.chi_tiet_buoi_hoc?.length || 0 }} buổi)</h4>
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50px;">Tuần</th>
+                      <th style="width: 120px;">Ngày học</th>
+                      <th style="width: 150px;">Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let buoi of lop.chi_tiet_buoi_hoc">
+                      <td>{{ buoi.tuan_thu }}</td>
+                      <td>{{ buoi.ngay_hoc | date:'dd/MM/yyyy' }}</td>
+                      <td [style.color]="buoi.trang_thai==='Nghỉ'?'#ef5350':'#2e7d32'">
+                        <strong>{{ buoi.trang_thai }}</strong>
+                      </td>
+                      <td>
+                        <button 
+                          class="btn edit" 
+                          *ngIf="buoi.trang_thai!=='Nghỉ'" 
+                          (click)="openUpdateStatusModal(lop.ma_lop_hp, buoi.ngay_hoc, 'Nghỉ')">
+                          Cập nhật
+                        </button>
+                        <button 
+                          class="btn add-btn" 
+                          *ngIf="buoi.trang_thai==='Nghỉ'" 
+                          (click)="openUpdateStatusModal(lop.ma_lop_hp, buoi.ngay_hoc, 'Bình thường')">
+                          Học lại
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<div class="modal-backdrop" *ngIf="isUpdateStatusModalOpen" (click)="closeUpdateStatusModal()"></div>
+<div class="modal" [class.open]="isUpdateStatusModalOpen">
+  <div class="modal-content">
+    <h3>Cập nhật Trạng thái Buổi học</h3>
+    
+    <div class="alert alert-info" *ngIf="updateFormModel">
+      <p>Bạn đang thay đổi lịch học của Lớp {{ updateFormModel.ma_lop_hp }}.</p>
+      <p>Buổi học ngày: {{ updateFormModel.ngay_hoc | date:'dd/MM/yyyy' }}</p>
+      <p>Trạng thái mới: <strong [style.color]="updateFormModel.trang_thai==='Nghỉ'?'#ef5350':'#2e7d32'">{{ updateFormModel.trang_thai }}</strong></p>
+    </div>
+
+    <div class="form-group">
+      <label>Ghi chú (Tùy chọn)</label>
+      <textarea [(ngModel)]="updateFormModel.ghi_chu" placeholder="Nhập lý do thay đổi lịch (VD: Giảng viên nghỉ ốm, Lớp học bù...)"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="cancel-btn" (click)="closeUpdateStatusModal()">Hủy</button>
+      <button class="btn add-btn" (click)="confirmUpdateStatus()">Xác nhận Cập nhật</button>
+    </div>
+  </div>
+</div>
